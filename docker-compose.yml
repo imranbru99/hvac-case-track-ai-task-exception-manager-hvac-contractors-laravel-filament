@@ -1,0 +1,59 @@
+services:
+  app:
+    build: .
+    container_name: hvac-case-track-app
+    ports:
+      - "8112:8000"
+    environment:
+      APP_NAME: HvacCaseTrack
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8112
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: hvac_case_track
+      DB_USERNAME: hct
+      DB_PASSWORD: secret
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    container_name: hvac-case-track-mysql
+    environment:
+      MYSQL_DATABASE: hvac_case_track
+      MYSQL_USER: hct
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports:
+      - "33082:3306"
+    volumes:
+      - hct_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootsecret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: hvac-case-track-redis
+    ports:
+      - "63802:6379"
+    restart: unless-stopped
+
+volumes:
+  hct_mysql_data:
